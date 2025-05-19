@@ -18,9 +18,9 @@
 
 </head>
 <style>
-	body{
+	/* body{
         background: #80808045;
-  }
+  } */
   .modal-dialog.large {
     width: 80% !important;
     max-width: unset;
