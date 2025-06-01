@@ -19,32 +19,37 @@
 					<tbody style="color: #930E14;">
 						<?php
 						$i = 1;
-						$donors = $conn->query("SELECT * FROM donors order by name asc ");
-						while ($row = $donors->fetch_assoc()):
-							$prev  = $conn->query("SELECT * FROM blood_inventory where status = 1 and donor_id = " . $row['id'] . " order by date(date_created) desc limit 1 ");
-							$prev = $prev->num_rows > 0 ? $prev->fetch_array()['date_created'] : '';
+						$response = file_get_contents("http://127.0.0.1:3000/api/donor");
+						$data = json_decode($response, true);
+
+						if (isset($data['data']) && is_array($data['data'])):
+							foreach ($data['data'] as $row):
+								$fullname = ucwords($row['firstname'] . ' ' . $row['lastname']);
+								$last_donor_date = !empty($row['lastdonordate']) ? date('M d, Y', strtotime($row['lastdonordate'])) : 'New';
+								$address = $row['city'] . ', ' . $row['province'];
 						?>
-							<tr>
-								<td class="text-center"><?php echo $i++ ?></td>
-								<td class="">
-									<p> <b><?php echo ucwords($row['name']) ?></b></p>
-								</td>
-								<td class="">
-									<p> <b><?php echo $row['blood_group'] ?></b></p>
-								</td>
-								<td class="">
-									<p>Email: <b><?php echo $row['email']; ?></b></p>
-									<p>Contact: <b><?php echo $row['contact']; ?></b></p>
-									<p>Address: <b><?php echo $row['address']; ?></b></p>
-								</td>
-								<td>
-									<?php echo !empty($prev) ? date('M d, Y', strtotime($prev)) : 'New' ?>
-								</td>
-								<td class="text-center">
-									<button class="btn btn-sm btn-primary detail_donor" type="button" data-id="<?php echo $row['id'] ?>">Detail</button>
-								</td>
-							</tr>
-						<?php endwhile; ?>
+								<tr>
+									<td class="text-center"><?php echo $i++ ?></td>
+									<td>
+										<p><b><?php echo $fullname ?></b></p>
+									</td>
+									<td>
+										<p><b><?php echo $row['bloodtype'].$row['rhesus'] ?></b></p>
+									</td>
+									<td>
+										<p>Email: <b><?php echo $row['email']; ?></b></p>
+										<p>Contact: <b><?php echo $row['phonenumber']; ?></b></p>
+										<p>Address: <b><?php echo $address; ?></b></p>
+									</td>
+									<td><?php echo $last_donor_date ?></td>
+									<td class="text-center">
+										<button class="btn btn-sm btn-primary detail_donor" type="button" data-id="<?php echo $row['id_donor'] ?>">Detail</button>
+									</td>
+								</tr>
+						<?php
+							endforeach;
+						endif;
+						?>
 					</tbody>
 				</table>
 			</div>
@@ -104,7 +109,10 @@
 
 	})
 	$('.delete_donor').click(function() {
-		_conf("Are you sure to delete this donor?", "delete_donor", [$(this).attr('data-id')])
+		const id = $(this).data('id');
+		_conf("Are you sure to delete this donor?", function () {
+		    delete_donor(id);
+		});
 	})
 
 	function delete_donor($id) {

@@ -13,47 +13,70 @@
 							<th class="">Nama Pasien</th>
 							<th class="">Golongan Darah</th>
 							<th class="">Informasi</th>
-							<th class="">Urgency Level</th>
+							<th class="">Tingkat Kegawatan</th>
 							<th class="text-center">Aksi</th>
 						</tr>
 					</thead>
 					<tbody style="color: #930E14;">
 						<?php
 						$i = 1;
-						$requests = $conn->query("SELECT * FROM requests order by date(date_created) desc ");
-						while ($row = $requests->fetch_assoc()):
 
+						$response = file_get_contents("http://127.0.0.1:3000/api/request");
+						$data = json_decode($response, true);
+
+						// Mapping level urgensi untuk ditampilkan
+						$urgency_label = [
+							3 => '<span class="badge badge-danger high_urgency">High</span>',
+							2 => '<span class="badge badge-warning medium_urgency">Medium</span>',
+							1 => '<span class="badge badge-success low_urgency">Low</span>',
+						];
+
+						if (isset($data['data']) && is_array($data['data'])):
+							foreach ($data['data'] as $row):
+								if (isset($row['status']) && $row['status'] == 0):
 						?>
-							<tr>
-								<td class="text-center"><?php echo $i++ ?></td>
-								<td class="">
-									<p> <b><?php echo $row['ref_code'] ?></b></p>
-								</td>
-								<td class="">
-									<p> <b><?php echo ucwords($row['patient']) ?></b></p>
-								</td>
-								<td class="">
-									<p> <b><?php echo $row['blood_group'] ?></b></p>
-								</td>
-								<td class="">
-									<p>Jumlah: <b><?php echo ($row['volume'] / 1000) . ' L' ?></b></p>
-									<p>Dokter: <b><?php echo ucwords($row['physician_name']) ?></b></p>
-								</td>
-								<td class=" text-center">
-									<?php if ($row['status'] == 0): ?>
-										<span class="badge badge-danger high_urgency">High</span>
-									<?php elseif ($row['status'] == 1): ?>
-										<span class="badge badge-warning medium_urgency">Medium</span>
-									<?php elseif ($row['status'] == 2): ?>
-										<span class="badge badge-success low_urgency">Low</span>
-									<?php endif; ?>
-								</td>
-								<td class="text-center">
-									<button class="btn btn-sm btn-danger tolak_request" type="button" data-id="<?php echo $row['id'] ?>">Tolak</button>
-									<button class="btn btn-sm btn-success setujui_request" type="button" data-id="<?php echo $row['id'] ?>">Setujui</button>
-								</td>
-							</tr>
-						<?php endwhile; ?>
+									<tr>
+										<td class="text-center"><?php echo $i++ ?></td>
+										<td>
+											<p><b><?php echo $row['hospital_name'] ?></b></p>
+										</td>
+										<td>
+											<p><b><?php echo $row['patient_name'] ?></b></p>
+										</td>
+										<td>
+											<p><b><?php echo $row['bloodtype'] . $row['rhesus'] ?></b></p>
+										</td>
+										<td>
+											<p>Jumlah: <b><?php echo $row['quantity'] ?> Kantong</b></p>
+											<p>Dokter: <b><?php echo $row['doctorname'] ?></b></p>
+										</td>
+										<td class="text-center">
+											<?php echo $urgency_label[$row['urgency']] ?? '' ?>
+										</td>
+										<td class="text-center">
+											<button class="btn btn-sm btn-danger tolak_request" type="button"
+												data-id="<?php echo $row['id_request'] ?>"
+												data-id_patient="<?php echo $row['id_patient'] ?>"
+												data-id_doctor="<?php echo $row['id_doctor'] ?>"
+												data-bloodtype="<?php echo $row['bloodtype'] ?>"
+												data-rhesus="<?php echo $row['rhesus'] ?>"
+												data-quantity="<?php echo $row['quantity'] ?>"
+												data-urgency="<?php echo $row['urgency'] ?>">Tolak</button>
+											<button class="btn btn-sm btn-success setujui_request" type="button"
+												data-id="<?php echo $row['id_request'] ?>"
+												data-id_patient="<?php echo $row['id_patient'] ?>"
+												data-id_doctor="<?php echo $row['id_doctor'] ?>"
+												data-bloodtype="<?php echo $row['bloodtype'] ?>"
+												data-rhesus="<?php echo $row['rhesus'] ?>"
+												data-quantity="<?php echo $row['quantity'] ?>"
+												data-urgency="<?php echo $row['urgency'] ?>">Setujui</button>
+										</td>
+									</tr>
+						<?php	
+						endif;	
+							endforeach;
+						endif;
+						?>
 					</tbody>
 				</table>
 			</div>
@@ -121,27 +144,89 @@
 		uni_modal("Manage request Details", "manage_request.php?id=" + $(this).attr('data-id'), "mid-large")
 
 	})
-	$('.delete_request').click(function() {
-		_conf("Are you sure to delete this request?", "delete_request", [$(this).attr('data-id')])
+	$('.setujui_request').click(function() {
+		const btn = $(this);
+		const id = btn.data('id');
+
+		const data = {
+			id_patient: parseInt(btn.data('id_patient')),
+			id_doctor: parseInt(btn.data('id_doctor')),
+			bloodtype: btn.data('bloodtype'),
+			rhesus: btn.data('rhesus'),
+			quantity: parseInt(btn.data('quantity')),
+			urgency: parseInt(btn.data('urgency')),
+			status: 1
+		};
+
+		_conf("Are you sure to accept this request?", function () {
+		    setujui_request(id, data);
+		});
+	})
+	$('.tolak_request').click(function() {
+		const btn = $(this);
+		const id = btn.data('id');
+
+		const data = {
+			id_patient: parseInt(btn.data('id_patient')),
+			id_doctor: parseInt(btn.data('id_doctor')),
+			bloodtype: btn.data('bloodtype'),
+			rhesus: btn.data('rhesus'),
+			quantity: parseInt(btn.data('quantity')),
+			urgency: parseInt(btn.data('urgency')),
+			status: 3
+		};
+
+		// if (confirm("Are you sure to reject this request?")) {
+		// 	tolak_request(id, data);
+		// }
+		_conf("Are you sure to reject this request?", function () {
+		    tolak_request(id, data);
+		});
 	})
 
-	function delete_request($id) {
-		start_load()
+	function tolak_request(id, data) {
+		start_load();
 		$.ajax({
-			url: 'ajax.php?action=delete_request',
-			method: 'POST',
-			data: {
-				id: $id
+			url: 'http://127.0.0.1:3000/api/request/' + id,
+			method: 'PUT',
+			headers: {
+				'Content-Type': 'application/json'
 			},
+			data: JSON.stringify(data),
 			success: function(resp) {
-				if (resp == 1) {
-					alert_toast("Data successfully deleted", 'success')
-					setTimeout(function() {
-						location.reload()
-					}, 1500)
-
-				}
+				alert_toast("Request rejected successfully", 'success');
+				setTimeout(function() {
+					location.reload();
+				}, 1500);
+			},
+			error: function(xhr, status, error) {
+				console.error("Reject failed:", error);
+				alert_toast("Failed to reject request", 'error');
+				end_load();
 			}
-		})
+		});
+	}
+
+	function setujui_request(id, data) {
+		start_load();
+		$.ajax({
+			url: 'http://127.0.0.1:3000/api/request/' + id,
+			method: 'PUT',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			data: JSON.stringify(data),
+			success: function(resp) {
+				alert_toast("Request accepted successfully", 'success');
+				setTimeout(function() {
+					location.reload();
+				}, 1500);
+			},
+			error: function(xhr, status, error) {
+				console.error("Accept failed:", error);
+				alert_toast("Failed to accept request", 'error');
+				end_load();
+			}
+		});
 	}
 </script>

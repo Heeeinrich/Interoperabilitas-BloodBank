@@ -28,34 +28,48 @@
 					<tbody style="color: #930E14;">
 						<?php
 						$i = 1;
-						$donor = $conn->query("SELECT * FROM donors");
-						while ($row = $donor->fetch_assoc()) {
-							$dname[$row['id']] = ucwords($row['name']);
-						}
-						$donations = $conn->query("SELECT * FROM blood_inventory where status = 1 order by date(date_created) desc ");
-						while ($row = $donations->fetch_assoc()):
 
+						// Ambil data donor dari API
+						$donorResponse = file_get_contents("http://127.0.0.1:3000/api/donor");
+						$donorData = json_decode($donorResponse, true);
+
+						$dname = [];
+						if (isset($donorData['data']) && is_array($donorData['data'])) {
+							foreach ($donorData['data'] as $donor) {
+								$fullName = ucwords($donor['firstname'] . ' ' . $donor['lastname']);
+								$dname[$donor['id_donor']] = $fullName;
+							}
+						}
+
+						// Ambil data darah dari API
+						$response = file_get_contents("http://127.0.0.1:3000/api/stock");
+						$data = json_decode($response, true);
+
+						if (isset($data['data']) && is_array($data['data'])):
+							foreach ($data['data'] as $row):
+								if ($row['status'] != 1) continue; // hanya status 1 (available)
 						?>
-							<tr>
-								<td class="text-center"><?php echo $i++ ?></td>
-								<td>
-									<?php echo date('M d, Y', strtotime($row['date_created'])) ?>
-								</td>
-								<td class="">
-									<p> <b><?php echo isset($dname[$row['donor_id']]) ? $dname[$row['donor_id']] : 'Donor was removed from the list.' ?></b></p>
-								</td>
-								<td class="">
-									<p> <b><?php echo $row['blood_group'] ?></b></p>
-								</td>
-								<td class="">
-									<p><b><?php echo $row['volume']; ?></b></p>
-								</td>
-								<td class="text-center">
-									<button class="btn btn-sm btn-primary edit_donation" type="button" data-id="<?php echo $row['id'] ?>">Edit</button>
-									<button class="btn btn-sm btn-danger delete_donation" type="button" data-id="<?php echo $row['id'] ?>">Delete</button>
-								</td>
-							</tr>
-						<?php endwhile; ?>
+								<tr>
+									<td class="text-center"><?php echo $i++ ?></td>
+									<td><?php echo date('M d, Y', strtotime($row['donordate'])) ?></td>
+									<td>
+										<p><b><?php echo isset($dname[$row['id_donor']]) ? $dname[$row['id_donor']] : 'Donor was removed from the list.' ?></b></p>
+									</td>
+									<td>
+										<p><b><?php echo $row['bloodtype'] . $row['rhesus'] ?></b></p>
+									</td>
+									<td>
+										<p><b><?php echo $row['volume']; ?></b></p>
+									</td>
+									<td class="text-center">
+										<button class="btn btn-sm btn-primary edit_donation" type="button" data-id="<?php echo $row['id_unit'] ?>">Edit</button>
+										<button class="btn btn-sm btn-danger delete_donation" type="button" data-id="<?php echo $row['id_unit'] ?>">Delete</button>
+									</td>
+								</tr>
+						<?php
+							endforeach;
+						endif;
+						?>
 					</tbody>
 				</table>
 			</div>
@@ -123,10 +137,12 @@
 		color: #333;
 	}
 
-	.edit_donation, .new_entry {
+	.edit_donation,
+	.new_entry {
 		background-color: #383F96;
 		border-radius: 10px;
 	}
+
 	.delete_donation {
 		background-color: #930E14;
 		border-radius: 10px;
@@ -156,26 +172,28 @@
 
 	})
 	$('.delete_donation').click(function() {
-		_conf("Are you sure to delete this donation?", "delete_donation", [$(this).attr('data-id')])
+		const id = $(this).data('id');
+		_conf("Are you sure to delete this donation?", function () {
+		    delete_donation(id);
+		});	
 	})
 
-	function delete_donation($id) {
-		start_load()
+	function delete_donation(id) {
+		start_load();
 		$.ajax({
-			url: 'ajax.php?action=delete_donation',
-			method: 'POST',
-			data: {
-				id: $id
-			},
+			url: 'http://127.0.0.1:3000/api/stock/' + id,
+			method: 'DELETE',
 			success: function(resp) {
-				if (resp == 1) {
-					alert_toast("Data successfully deleted", 'success')
-					setTimeout(function() {
-						location.reload()
-					}, 1500)
-
-				}
+				alert_toast("Data successfully deleted", 'success');
+				setTimeout(function() {
+					location.reload();
+				}, 1500);
+			},
+			error: function(xhr, status, error) {
+				console.error("Delete failed:", error);
+				alert_toast("Failed to delete data", 'error');
+				end_load();
 			}
-		})
+		});
 	}
 </script>

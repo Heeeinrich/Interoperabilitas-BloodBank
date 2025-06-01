@@ -174,11 +174,13 @@
         }
     })
 }
-window._conf = function($msg='',$func='',$params = []){
-     $('#confirm_modal #confirm').attr('onclick',$func+"("+$params.join(',')+")")
-     $('#confirm_modal .modal-body').html($msg)
-     $('#confirm_modal').modal('show')
-  }
+window._conf = function($msg = '', callback = null) {
+    $('#confirm_modal .modal-body').html($msg);
+    $('#confirm_modal').modal('show');
+    $('#confirm_modal #confirm').off('click').on('click', function () {
+        if (typeof callback === 'function') callback();
+    });
+};
    window.alert_toast= function($msg = 'TEST',$bg = 'success'){
       $('#alert_toast').removeClass('bg-success')
       $('#alert_toast').removeClass('bg-danger')
