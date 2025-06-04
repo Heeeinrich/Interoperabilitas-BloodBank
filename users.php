@@ -6,8 +6,8 @@
 					<th class="text-center">No</th>
 					<th class="text-center">Username</th>
 					<th class="text-center">Email</th>
-					<th class="text-center">Password</th>
-					<!-- <th class="text-center">Roles</th> -->
+					<!-- <th class="text-center">Password</th> -->
+					<th class="text-center">Aksi</th>
 				</tr>
 			</thead>
 			<tbody style="color: #930E14;">
@@ -31,8 +31,11 @@
 						<td>
 							<?php echo $row['email'] ?>
 						</td>
-						<td>
+						<!-- <td>
 							<?php echo $row['password'] ?>
+						</td> -->
+						<td class="text-center">
+							<button class="btn btn-sm btn-danger delete_user" type="button" data-id="<?php echo $row['id_user'] ?>">Delete</button>
 						</td>
 					</tr>
 				<?php endforeach; ?>
@@ -69,3 +72,30 @@
 		border-radius: 10px;
 	}
 </style>
+<script>
+	$('.delete_user').click(function() {
+		const id = $(this).data('id');
+		_conf("Are you sure to delete this user?", function () {
+		    delete_user(id);
+		});	
+	})
+
+	function delete_user(id) {
+		start_load();
+		$.ajax({
+			url: 'http://127.0.0.1:3000/api/user/' + id,
+			method: 'DELETE',
+			success: function(resp) {
+				alert_toast("User successfully deleted", 'success');
+				setTimeout(function() {
+					location.reload();
+				}, 1500);
+			},
+			error: function(xhr, status, error) {
+				console.error("Delete failed:", error);
+				alert_toast("Failed to delete user", 'error');
+				end_load();
+			}
+		});
+	}
+</script>

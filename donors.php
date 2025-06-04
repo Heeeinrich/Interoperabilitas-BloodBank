@@ -5,6 +5,11 @@
 		<div class="row">
 			<!-- Table Panel -->
 			<div class="col-md-12">
+				<div class="d-flex flex-column align-items-end">
+					<a class="btn btn-primary btn-sm mb-2 new_entry" href="javascript:void(0)" id="new_donor">
+						<i class="fa fa-plus"></i> New Entry
+					</a>
+				</div>
 				<table class="table table-bordered table-hover text-center text-danger" style="border: 1px solid #930E14;">
 					<thead style="color: #930E14;">
 						<tr>
@@ -34,7 +39,7 @@
 										<p><b><?php echo $fullname ?></b></p>
 									</td>
 									<td>
-										<p><b><?php echo $row['bloodtype'].$row['rhesus'] ?></b></p>
+										<p><b><?php echo $row['bloodtype'] . $row['rhesus'] ?></b></p>
 									</td>
 									<td>
 										<p>Email: <b><?php echo $row['email']; ?></b></p>
@@ -65,6 +70,11 @@
 
 	td p {
 		margin: unset
+	}
+
+	.new_entry {
+		background-color: #383F96;
+		border-radius: 10px;
 	}
 
 	table thead th,
@@ -102,16 +112,19 @@
 
 	$('#new_donor').click(function() {
 		uni_modal("New Donor", "manage_donor.php", "mid-large")
-
 	})
+	$('.detail_donor').click(function() {
+		const id = $(this).attr('data-id');
+		uni_modal("Detail Donor", "donor_detail.php?id=" + id, "ok");
+	});
+
 	$('.edit_donor').click(function() {
 		uni_modal("Manage donor Details", "manage_donor.php?id=" + $(this).attr('data-id'), "mid-large")
-
 	})
 	$('.delete_donor').click(function() {
 		const id = $(this).data('id');
-		_conf("Are you sure to delete this donor?", function () {
-		    delete_donor(id);
+		_conf("Are you sure to delete this donor?", function() {
+			delete_donor(id);
 		});
 	})
 
