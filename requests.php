@@ -1,132 +1,232 @@
-<?php include('db_connect.php');?>
+<?php include('db_connect.php'); ?>
 
 <div class="container-fluid">
-	
-	<div class="col-lg-12">
-		<div class="row mb-4 mt-4">
-			<div class="col-md-12">
-				
-			</div>
-		</div>
+	<div class="col-lg-12 mt-5">
 		<div class="row">
-			<!-- FORM Panel -->
-
 			<!-- Table Panel -->
 			<div class="col-md-12">
-				<div class="card">
-					<div class="card-header">
-						<b>List of Requests</b>
-						<span class="float:right"><a class="btn btn-primary btn-block btn-sm col-sm-2 float-right" href="javascript:void(0)" id="new_request">
-					<i class="fa fa-plus"></i> New Entry
-				</a></span>
-					</div>
-					<div class="card-body">
-						<table class="table table-condensed table-bordered table-hover">
-							<thead>
-								<tr>
-									<th class="text-center">#</th>
-									<th class="">Date</th>
-									<th class="">Referrence Code</th>
-									<th class="">Patient Name</th>
-									<th class="">Blood Group</th>
-									<th class="">Information</th>
-									<th class="">Status</th>
-									<th class="text-center">Action</th>
-								</tr>
-							</thead>
-							<tbody>
-								<?php 
-								$i = 1;
-								$requests = $conn->query("SELECT * FROM requests order by date(date_created) desc ");
-								while($row=$requests->fetch_assoc()):
-									
-								?>
-								<tr>
-									<td class="text-center"><?php echo $i++ ?></td>
-									<td>
-										<?php echo date('M d, Y',strtotime($row['date_created'])) ?>
-									</td>
-									<td class="">
-										 <p> <b><?php echo $row['ref_code'] ?></b></p>
-									</td>
-									<td class="">
-										 <p> <b><?php echo ucwords($row['patient']) ?></b></p>
-									</td>
-									<td class="">
-										 <p> <b><?php echo $row['blood_group'] ?></b></p>
-									</td>
-									<td class="">
-										 <p>Volume Needed: <b><?php echo  ($row['volume'] / 1000).' L' ?></b></p>
-										 <p>Physician Name: <b><?php echo ucwords($row['physician_name']) ?></b></p>
-									</td>
-									<td class=" text-center">
-										<?php if($row['status'] == 0): ?>
-											<span class="badge badge-primary">Pending</span>
-										<?php else: ?>
-											<span class="badge badge-success">Approved</span>
-										<?php endif; ?>
-									</td>
-									<td class="text-center">
-										<button class="btn btn-sm btn-outline-primary edit_request" type="button" data-id="<?php echo $row['id'] ?>" >Edit</button>
-										<button class="btn btn-sm btn-outline-danger delete_request" type="button" data-id="<?php echo $row['id'] ?>">Delete</button>
-									</td>
-								</tr>
-								<?php endwhile; ?>
-							</tbody>
-						</table>
-					</div>
-				</div>
+				<table class="table table-bordered table-hover text-center text-danger" style="border: 1px solid #930E14;">
+					<thead style="color: #930E14;">
+						<tr>
+							<th class="text-center">No</th>
+							<th class="">Rumah Sakit</th>
+							<th class="">Nama Pasien</th>
+							<th class="">Golongan Darah</th>
+							<th class="">Informasi</th>
+							<th class="">Tingkat Kegawatan</th>
+							<th class="text-center">Aksi</th>
+						</tr>
+					</thead>
+					<tbody style="color: #930E14;">
+						<?php
+						$i = 1;
+
+						$response = file_get_contents("http://127.0.0.1:3000/api/request");
+						$data = json_decode($response, true);
+
+						// Mapping level urgensi untuk ditampilkan
+						$urgency_label = [
+							3 => '<span class="badge badge-danger high_urgency">High</span>',
+							2 => '<span class="badge badge-warning medium_urgency">Medium</span>',
+							1 => '<span class="badge badge-success low_urgency">Low</span>',
+						];
+
+						if (isset($data['data']) && is_array($data['data'])):
+							foreach ($data['data'] as $row):
+								if (isset($row['status']) && $row['status'] == 0):
+						?>
+									<tr>
+										<td class="text-center"><?php echo $i++ ?></td>
+										<td>
+											<p><b><?php echo $row['hospital_name'] ?></b></p>
+										</td>
+										<td>
+											<p><b><?php echo $row['patient_name'] ?></b></p>
+										</td>
+										<td>
+											<p><b><?php echo $row['bloodtype'] . $row['rhesus'] ?></b></p>
+										</td>
+										<td>
+											<p>Jumlah: <b><?php echo $row['quantity'] ?> Kantong</b></p>
+											<p>Dokter: <b><?php echo $row['doctorname'] ?></b></p>
+										</td>
+										<td class="text-center">
+											<?php echo $urgency_label[$row['urgency']] ?? '' ?>
+										</td>
+										<td class="text-center">
+											<button class="btn btn-sm btn-danger tolak_request" type="button"
+												data-id="<?php echo $row['id_request'] ?>"
+												data-id_patient="<?php echo $row['id_patient'] ?>"
+												data-id_doctor="<?php echo $row['id_doctor'] ?>"
+												data-bloodtype="<?php echo $row['bloodtype'] ?>"
+												data-rhesus="<?php echo $row['rhesus'] ?>"
+												data-quantity="<?php echo $row['quantity'] ?>"
+												data-urgency="<?php echo $row['urgency'] ?>">Tolak</button>
+											<button class="btn btn-sm btn-success setujui_request" type="button"
+												data-id="<?php echo $row['id_request'] ?>"
+												data-id_patient="<?php echo $row['id_patient'] ?>"
+												data-id_doctor="<?php echo $row['id_doctor'] ?>"
+												data-bloodtype="<?php echo $row['bloodtype'] ?>"
+												data-rhesus="<?php echo $row['rhesus'] ?>"
+												data-quantity="<?php echo $row['quantity'] ?>"
+												data-urgency="<?php echo $row['urgency'] ?>">Setujui</button>
+										</td>
+									</tr>
+						<?php	
+						endif;	
+							endforeach;
+						endif;
+						?>
+					</tbody>
+				</table>
 			</div>
 			<!-- Table Panel -->
 		</div>
-	</div>	
+	</div>
 
 </div>
 <style>
-	
-	td{
+	td {
 		vertical-align: middle !important;
 	}
-	td p{
+
+	td p {
 		margin: unset
 	}
-	img{
-		max-width:100px;
-		max-height: :150px;
+
+	table thead th,
+	table tbody td {
+		border-top: 1px solid #930E14 !important;
+		border-left: 1px solid #930E14 !important;
+	}
+
+	table thead th:first-child,
+	table tbody td:first-child {
+		border-left: none !important;
+	}
+
+	table thead tr:first-child th {
+		border-top: none !important;
+	}
+
+	.table {
+		border-collapse: separate;
+		border-spacing: 0;
+		border-radius: 20px;
+		overflow: hidden;
+	}
+
+	.tolak_request,
+	.high_urgency {
+		background-color: #930E14;
+	}
+
+	.setujui_request,
+	.low_urgency {
+		background-color: #3C8D1E;
+	}
+
+	.medium_urgency {
+		background-color: #E6D003;
+		color: white;
 	}
 </style>
 <script>
-	$(document).ready(function(){
-		$('table').dataTable()
+	$(document).ready(function() {
+		// $('table').dataTable()
 	})
-	
-	$('#new_request').click(function(){
-		uni_modal("New request","manage_request.php","mid-large")
-		
-	})
-	$('.edit_request').click(function(){
-		uni_modal("Manage request Details","manage_request.php?id="+$(this).attr('data-id'),"mid-large")
-		
-	})
-	$('.delete_request').click(function(){
-		_conf("Are you sure to delete this request?","delete_request",[$(this).attr('data-id')])
-	})
-	
-	function delete_request($id){
-		start_load()
-		$.ajax({
-			url:'ajax.php?action=delete_request',
-			method:'POST',
-			data:{id:$id},
-			success:function(resp){
-				if(resp==1){
-					alert_toast("Data successfully deleted",'success')
-					setTimeout(function(){
-						location.reload()
-					},1500)
 
-				}
+	$('#new_request').click(function() {
+		uni_modal("New request", "manage_request.php", "mid-large")
+
+	})
+	$('.edit_request').click(function() {
+		uni_modal("Manage request Details", "manage_request.php?id=" + $(this).attr('data-id'), "mid-large")
+
+	})
+	$('.setujui_request').click(function() {
+		const btn = $(this);
+		const id = btn.data('id');
+
+		const data = {
+			id_patient: parseInt(btn.data('id_patient')),
+			id_doctor: parseInt(btn.data('id_doctor')),
+			bloodtype: btn.data('bloodtype'),
+			rhesus: btn.data('rhesus'),
+			quantity: parseInt(btn.data('quantity')),
+			urgency: parseInt(btn.data('urgency')),
+			status: 1
+		};
+
+		_conf("Are you sure to accept this request?", function () {
+		    setujui_request(id, data);
+		});
+	})
+	$('.tolak_request').click(function() {
+		const btn = $(this);
+		const id = btn.data('id');
+
+		const data = {
+			id_patient: parseInt(btn.data('id_patient')),
+			id_doctor: parseInt(btn.data('id_doctor')),
+			bloodtype: btn.data('bloodtype'),
+			rhesus: btn.data('rhesus'),
+			quantity: parseInt(btn.data('quantity')),
+			urgency: parseInt(btn.data('urgency')),
+			status: 3
+		};
+
+		// if (confirm("Are you sure to reject this request?")) {
+		// 	tolak_request(id, data);
+		// }
+		_conf("Are you sure to reject this request?", function () {
+		    tolak_request(id, data);
+		});
+	})
+
+	function tolak_request(id, data) {
+		start_load();
+		$.ajax({
+			url: 'http://127.0.0.1:3000/api/request/' + id,
+			method: 'PUT',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			data: JSON.stringify(data),
+			success: function(resp) {
+				alert_toast("Request rejected successfully", 'success');
+				setTimeout(function() {
+					location.reload();
+				}, 1500);
+			},
+			error: function(xhr, status, error) {
+				console.error("Reject failed:", error);
+				alert_toast("Failed to reject request", 'error');
+				end_load();
 			}
-		})
+		});
+	}
+
+	function setujui_request(id, data) {
+		start_load();
+		$.ajax({
+			url: 'http://127.0.0.1:3000/api/request/' + id,
+			method: 'PUT',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			data: JSON.stringify(data),
+			success: function(resp) {
+				alert_toast("Request accepted successfully", 'success');
+				setTimeout(function() {
+					location.reload();
+				}, 1500);
+			},
+			error: function(xhr, status, error) {
+				console.error("Accept failed:", error);
+				alert_toast("Failed to accept request", 'error');
+				end_load();
+			}
+		});
 	}
 </script>

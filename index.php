@@ -18,9 +18,9 @@
 
 </head>
 <style>
-	body{
+	/* body{
         background: #80808045;
-  }
+  } */
   .modal-dialog.large {
     width: 80% !important;
     max-width: unset;
@@ -149,36 +149,52 @@
   window.uni_modal = function($title = '' , $url='',$size=""){
     start_load()
     $.ajax({
-        url:$url,
-        error:err=>{
+        url: $url,
+        error: err => {
             console.log()
-            alert("An error occured")
+            alert("An error occurred")
         },
-        success:function(resp){
-            if(resp){
+        success: function(resp) {
+            if (resp) {
                 $('#uni_modal .modal-title').html($title)
                 $('#uni_modal .modal-body').html(resp)
-                if($size != ''){
-                    $('#uni_modal .modal-dialog').addClass($size)
-                }else{
+
+                // Tambahkan logika ini:
+                if ($size === 'ok') {
                     $('#uni_modal .modal-dialog').removeAttr("class").addClass("modal-dialog modal-md")
+                    $('#uni_modal .modal-footer').html(`
+                        <button type="button" class="btn btn-primary" data-dismiss="modal">OK</button>
+                    `)
+                } else {
+                    if ($size != '') {
+                        $('#uni_modal .modal-dialog').addClass($size)
+                    } else {
+                        $('#uni_modal .modal-dialog').removeAttr("class").addClass("modal-dialog modal-md")
+                    }
+                    $('#uni_modal .modal-footer').html(`
+                        <button type="button" class="btn btn-primary" onclick="$('#uni_modal form').submit()">Save</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    `)
                 }
+
                 $('#uni_modal').modal({
-                  show:true,
-                  backdrop:'static',
-                  keyboard:false,
-                  focus:true
+                    show: true,
+                    backdrop: 'static',
+                    keyboard: false,
+                    focus: true
                 })
                 end_load()
             }
         }
     })
 }
-window._conf = function($msg='',$func='',$params = []){
-     $('#confirm_modal #confirm').attr('onclick',$func+"("+$params.join(',')+")")
-     $('#confirm_modal .modal-body').html($msg)
-     $('#confirm_modal').modal('show')
-  }
+window._conf = function($msg = '', callback = null) {
+    $('#confirm_modal .modal-body').html($msg);
+    $('#confirm_modal').modal('show');
+    $('#confirm_modal #confirm').off('click').on('click', function () {
+        if (typeof callback === 'function') callback();
+    });
+};
    window.alert_toast= function($msg = 'TEST',$bg = 'success'){
       $('#alert_toast').removeClass('bg-success')
       $('#alert_toast').removeClass('bg-danger')
